@@ -1,17 +1,12 @@
-# --- Core app ---
 streamlit==1.37.1
-numpy==1.26.4          # many CV libs still expect NumPy 1.x
+numpy==1.26.4
 pandas==2.2.2
 matplotlib==3.8.4
 pillow==10.4.0
-
-# --- Computer vision ---
-# Use headless OpenCV for servers/Streamlit Cloud (no GUI dependencies)
 opencv-python-headless==4.10.0.84
-
-# --- Face recognition stack ---
-cmake>=3.26            # needed for dlib builds if a wheel isn't found
 dlib==19.24.4
 face-recognition==1.3.0
+cmake>=3.26
+
 
 
