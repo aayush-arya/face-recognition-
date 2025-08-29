@@ -1,4 +1,4 @@
-# Import libraries
+import streamlit as st
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -15,8 +15,16 @@ from sklearn.linear_model import LogisticRegression
 # -------------------------
 # 1. Load dataset
 # -------------------------
+st.title("Face Recognition Classification App")
+
 file_path = "Face Recognition Image.xlsx"
-df = pd.read_excel(file_path)
+
+try:
+    df = pd.read_excel(file_path)
+    st.success("✅ Dataset loaded successfully")
+except Exception as e:
+    st.error(f"Error loading dataset: {e}")
+    st.stop()
 
 # Handle missing values & encode
 df = df.drop_duplicates()
@@ -28,7 +36,14 @@ for col in df.select_dtypes(include=["object"]).columns:
         df[col] = le.fit_transform(df[col].astype(str))
 
 # Extract labels from filenames
-df["label"] = df["file"].apply(lambda x: str(x).split("_")[0])
+if "file" in df.columns:
+    df["label"] = df["file"].apply(lambda x: str(x).split("_")[0])
+else:
+    st.error("⚠️ No 'file' column found in dataset")
+    st.stop()
+
+st.subheader("Dataset Preview")
+st.dataframe(df.head())
 
 X = df.drop(["file", "label"], axis=1)
 y = df["label"]
@@ -49,7 +64,8 @@ baseline = LogisticRegression(max_iter=1000)
 baseline.fit(X_train, y_train)
 y_pred_base = baseline.predict(X_test)
 
-print("Baseline Classification Report:\n", classification_report(y_test, y_pred_base))
+st.subheader("Baseline Model - Logistic Regression")
+st.text(classification_report(y_test, y_pred_base))
 
 # -------------------------
 # 3. Train Improved Model (Random Forest tuned)
@@ -62,18 +78,20 @@ rf = RandomForestClassifier(
 rf.fit(X_train, y_train)
 y_pred_rf = rf.predict(X_test)
 
-print("Improved Model Classification Report:\n", classification_report(y_test, y_pred_rf))
+st.subheader("Improved Model - Random Forest")
+st.text(classification_report(y_test, y_pred_rf))
 
 # -------------------------
 # 4. Confusion Matrix
 # -------------------------
 cm = confusion_matrix(y_test, y_pred_rf)
-plt.figure(figsize=(6,5))
-sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=rf.classes_, yticklabels=rf.classes_)
-plt.xlabel("Predicted")
-plt.ylabel("Actual")
-plt.title("Confusion Matrix - Random Forest")
-plt.show()
+fig, ax = plt.subplots(figsize=(6,5))
+sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
+            xticklabels=rf.classes_, yticklabels=rf.classes_, ax=ax)
+ax.set_xlabel("Predicted")
+ax.set_ylabel("Actual")
+ax.set_title("Confusion Matrix - Random Forest")
+st.pyplot(fig)
 
 # -------------------------
 # 5. ROC Curve (only works if binary classification)
@@ -83,28 +101,29 @@ if len(np.unique(y)) == 2:
     fpr, tpr, _ = roc_curve(y_test, y_prob, pos_label=rf.classes_[1])
     roc_auc = auc(fpr, tpr)
 
-    plt.figure(figsize=(6,5))
-    plt.plot(fpr, tpr, label=f"ROC Curve (AUC = {roc_auc:.2f})")
-    plt.plot([0,1], [0,1], 'r--')
-    plt.xlabel("False Positive Rate")
-    plt.ylabel("True Positive Rate")
-    plt.title("ROC Curve")
-    plt.legend()
-    plt.show()
+    fig, ax = plt.subplots(figsize=(6,5))
+    ax.plot(fpr, tpr, label=f"ROC Curve (AUC = {roc_auc:.2f})")
+    ax.plot([0,1], [0,1], 'r--')
+    ax.set_xlabel("False Positive Rate")
+    ax.set_ylabel("True Positive Rate")
+    ax.set_title("ROC Curve")
+    ax.legend()
+    st.pyplot(fig)
 
     # Precision-Recall curve
     precision, recall, _ = precision_recall_curve(y_test, y_prob, pos_label=rf.classes_[1])
-    plt.figure(figsize=(6,5))
-    plt.plot(recall, precision, label="Precision-Recall Curve")
-    plt.xlabel("Recall")
-    plt.ylabel("Precision")
-    plt.title("Precision-Recall Curve")
-    plt.legend()
-    plt.show()
+    fig, ax = plt.subplots(figsize=(6,5))
+    ax.plot(recall, precision, label="Precision-Recall Curve")
+    ax.set_xlabel("Recall")
+    ax.set_ylabel("Precision")
+    ax.set_title("Precision-Recall Curve")
+    ax.legend()
+    st.pyplot(fig)
 
 # -------------------------
 # 6. Compare Baseline vs Improved
 # -------------------------
-print("\n🔹 Baseline Accuracy:", baseline.score(X_test, y_test))
-print("🔹 Improved Model Accuracy:", rf.score(X_test, y_test))
+st.subheader("Model Comparison")
+st.write("🔹 Baseline Accuracy:", baseline.score(X_test, y_test))
+st.write("🔹 Improved Model Accuracy:", rf.score(X_test, y_test))
 
