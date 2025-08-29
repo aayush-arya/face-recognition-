@@ -1,8 +1,9 @@
 streamlit
-numpy
 pandas
+numpy
 matplotlib
-pillow
-opencv-python-headless
+seaborn
+scikit-learn
+openpyxl
 
 
